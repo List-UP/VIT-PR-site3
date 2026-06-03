@@ -1,0 +1,2026 @@
+@charset "UTF-8";
+
+/* ── 1. RESET & BASE ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: inherit; text-decoration: none; transition: color .18s ease; }
+button { cursor: pointer; font: inherit; border: none; background: none; }
+img, svg, video { display: block; max-width: 100%; }
+ul, ol { list-style: none; }
+input, textarea, select { font: inherit; }
+
+/* <details>/<summary> — kill every browser's native disclosure
+   marker. Component-level FAQ styles already use `display:flex` on
+   <summary> which neutralises the marker in Firefox/Chromium, but
+   older Chromium builds + Safari still render a tiny dot/triangle
+   unless each of these three resets is present. Fixing it framework-
+   wide means any future FAQ / "click to expand" component ships
+   clean, no per-variant repetition needed. */
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::marker { display: none; content: ''; }
+
+/* ── 2. CSS TOKENS (framework-level, override with brand vars) ── */
+:root {
+  --radius-xs:   3px;
+  --radius-sm:   6px;
+  --radius:      10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-full: 9834px;
+
+  --speed-fast:  .15s;
+  --speed:       .22s;
+  --speed-slow:  .35s;
+  --ease:        cubic-bezier(.4, 0, .2, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+
+  --z-header:   100;
+  --z-modal:    200;
+  --z-toast:    300;
+}
+
+/* ── 3. LAYOUT ─────────────────────────────────────────────────
+   ONE source of truth for inner-content width. Components MUST use
+   .wf-container for any "centered text/cards/grid" wrapper rather
+   than inventing their own max-width. Section backgrounds/colors
+   live on the OUTER section — content lives inside the container.
+   Mobile padding shrinks automatically below 595px so cards don't
+   touch the screen edge. */
+.wf-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+@media (max-width: 600px) {
+  .wf-container { padding: 0 16px; }
+}
+
+/* Banner placeholder. In the builder preview no real image is injected
+   into <img data-banner-image>, so its empty src renders as the
+   broken-image icon. Hiding it lets the card fall back to its
+   accent-gradient background. In production the generator fills src
+   via _inject_banner_image() and the rule no longer matches. */
+img[data-banner-image]:not([src]),
+img[data-banner-image][src=""] {
+  display: none !important;
+}
+
+/* Inline SVG icon baseline. Replaces the per-tag style="display:inline-block;
+   vertical-align:-0.149em;flex-shrink:0" that the icon generator used to emit
+   on every <svg>. Keeps icons aligned with their adjacent text and prevents
+   shrinking inside flex containers. */
+.wf-icon-inline {
+  display: inline-block;
+  vertical-align: -0.154em;
+  flex-shrink: 0;
+}
+
+/* Sticky-root state classes. Replaces inline `style="position:sticky;..."` that
+   the generator used to inject onto every <header data-sticky-root>. The
+   class is toggled per-site by the generator based on the sticky_settings
+   preference for the chosen header variant. */
+.wf-sticky-root { position: sticky; top: 0; z-index: 100; }
+.wf-static-root { position: relative; }
+
+/* Section vertical paddings. Use top/bottom-only (NOT shorthand `padding: 63px 0`)
+   so when an author accidentally combines wf-section with wf-container on the
+   same element, the horizontal padding from wf-container survives. Without
+   this rule split, `padding: 64px 0` shorthand resets horizontal padding to 0
+   and the section's text becomes flush against the viewport edge on mobile. */
+.wf-section        { padding-top: 64px; padding-bottom: 65px; }
+.wf-section-sm     { padding-top: 39px; padding-bottom: 39px; }
+.wf-section-xs     { padding-top: 23px; padding-bottom: 24px; }
+@media (max-width: 600px) {
+  .wf-section    { padding-top: 39px; padding-bottom: 41px; }
+  .wf-section-sm { padding-top: 29px; padding-bottom: 28px; }
+  .wf-section-xs { padding-top: 18px; padding-bottom: 18px; }
+}
+
+.wf-section,
+.wf-section-sm,
+.wf-section-xs,
+.wf-hero-inner {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .h20_cta-desktop.h20_s3 {
+    display: none !important;
+  }
+
+  .h20_menu-btn {
+    display: flex !important;
+  }
+}
+
+.ft12_crypto-brands {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.ft12_crypto-brands span {
+  color: var(--c-text);
+  background: color-mix(in srgb, var(--c-accent) 13%, var(--c-surface));
+  border: 1px solid color-mix(in srgb, var(--c-accent) 35%, var(--c-border));
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.es-footer-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ft12_table {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 18px;
+  max-width: 1200px;
+  margin: 4px auto 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--c-border);
+  border-bottom: 1px solid var(--c-border);
+}
+.ft12_col {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.ft12_col h3 {
+  margin: 0 0 4px;
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+.ft12_col a {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color .2s ease;
+}
+.ft12_col a:hover {
+  color: var(--c-accent);
+}
+@media (max-width: 960px) {
+  .ft12_table {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .ft12_table {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 14px;
+  }
+}
+@media (max-width: 768px) {
+  .ft12_crypto-brands {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ── 4. GRID SYSTEM ──────────────────────────────────────────── */
+.wf-grid   { display: grid; gap: 20px; }
+.wf-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.wf-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.wf-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.wf-grid-auto-sm { grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
+.wf-grid-auto    { grid-template-columns: repeat(auto-fill, minmax(243px, 1fr)); }
+.wf-grid-auto-lg { grid-template-columns: repeat(auto-fill, minmax(323px, 1fr)); }
+
+.wf-flex         { display: flex; }
+.wf-flex-col     { flex-direction: column; }
+.wf-items-center { align-items: center; }
+.wf-justify-between { justify-content: space-between; }
+.wf-justify-center  { justify-content: center; }
+.wf-gap-1 { gap: 8px; }
+.wf-gap-2 { gap: 16px; }
+.wf-gap-3 { gap: 23px; }
+.wf-gap-4 { gap: 40px; }
+.wf-wrap  { flex-wrap: wrap; }
+
+/* ── 5. TYPOGRAPHY — Single source of truth ─────────────────── */
+/*
+   Unified type scale used across the entire framework.
+   Element selectors (h1..h6) get the same defaults so unclassed
+   semantic markup also inherits the canonical sizes.
+   Component CSS should NEVER override font-size / font-weight /
+   letter-spacing on heading classes — use these classes everywhere.
+*/
+
+.wf-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+h1, .wf-h1 {
+  font-size: clamp(30px, 4.6vw, 47px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -.035em;
+  color: var(--c-text);
+  margin: 0;
+  max-width: 700px;
+  text-align: start !important;}
+
+h2, .wf-h2 {
+  font-size: clamp(22px, 2.8vw, 31px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+  color: var(--c-text);
+  margin: 0;
+}
+
+h3, .wf-h3 {
+  font-size: clamp(17px, 1.8vw, 20px);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -.01em;
+  color: var(--c-text);
+  margin: 0;
+}
+
+h4, .wf-h4 {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -.005em;
+  color: var(--c-text);
+  margin: 0;
+}
+
+h5, .wf-h5 {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--c-text);
+  margin: 0;
+}
+
+h6, .wf-h6 {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--c-text);
+  margin: 0;
+}
+
+/* Attention-grabbing modifier for CTA / promo headlines (h2 by markup,
+   visually larger so call-to-action stays loud). Apply with: class="wf-h-mega" */
+.wf-h-mega {
+  font-size: clamp(27px, 3.8vw, 42px);
+  letter-spacing: -.03em;
+  line-height: 1.1;
+}
+
+.wf-lead { font-size: 17px; color: var(--c-text-muted); line-height: 1.7; }
+.wf-lead-spaced { margin-top: 10px; margin-bottom: 24px; }
+.wf-body  { font-size: 15px; color: var(--c-text-muted); line-height: 1.65; }
+.wf-small { font-size: 13px; color: var(--c-text-muted); line-height: 1.5; }
+.wf-tiny  { font-size: 11px; color: var(--c-text-muted); line-height: 1.45; }
+
+.wf-gradient-text {
+  background: linear-gradient(139deg, var(--c-accent) 0%, color-mix(in srgb, var(--c-accent) 60%, var(--c-btn)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.wf-text-accent  { color: var(--c-accent); }
+.wf-text-muted   { color: var(--c-text-muted); }
+.wf-text-btn     { color: var(--c-btn); }
+.wf-text-center  { text-align: center; }
+.wf-text-right   { text-align: right; }
+
+/* ── 6. BUTTONS ──────────────────────────────────────────────── */
+.wf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 32px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .025em;
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease),
+              background var(--speed) var(--ease),
+              border-color var(--speed) var(--ease),
+              color var(--speed) var(--ease);
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.wf-btn:active { transform: scale(.97) !important; }
+
+/* Sizes */
+.wf-btn-xs  { padding: 6px 14px;  font-size: 12px; }
+.wf-btn-sm  { padding: 9px 20px;  font-size: 13px; }
+.wf-btn-lg  { padding: 16px 45px; font-size: 16px; }
+.wf-btn-xl  { padding: 21px 54px; font-size: 18px; font-weight: 800; }
+
+/* Shapes */
+.wf-btn-pill   { border-radius: var(--radius-full); }
+.wf-btn-sharp  { border-radius: 0; }
+.wf-btn-round  { border-radius: var(--radius-lg); }
+
+/* Primary — uses btn color
+   Hover effect unified with bonus_banner / app_banner / how_to / vip / support
+   local CTAs: brightness boost + thin accent ring halo + lift glow. */
+.wf-btn-primary {
+  background: var(--c-btn);
+  color: var(--c-btn-text);
+  box-shadow: 0 8px 21px -8px color-mix(in srgb, var(--c-btn) 70%, transparent);
+  transition: box-shadow .25s ease, filter .18s ease, opacity .2s ease;
+}
+.wf-btn-primary:hover {
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--c-btn) 22%, transparent),
+    0 12px 29px -8px color-mix(in srgb, var(--c-btn) 80%, transparent);
+}
+
+/* Accent — uses accent color */
+.wf-btn-accent {
+  background: var(--c-accent);
+  color: var(--c-bg);
+  font-weight: 800;
+  box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--c-accent) 70%, transparent);
+  transition: box-shadow .25s ease, filter .18s ease, opacity .2s ease;
+}
+.wf-btn-accent:hover {
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--c-accent) 22%, transparent),
+    0 12px 28px -8px color-mix(in srgb, var(--c-accent) 80%, transparent);
+}
+
+/* Ghost — subtle border. Hover unified with bonus_banner pattern: ring halo. */
+.wf-btn-ghost {
+  background: transparent;
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+  transition: box-shadow .25s ease, background .2s ease, filter .18s ease;
+}
+.wf-btn-ghost:hover {
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--c-accent) 18%, transparent),
+    0 12px 28px -8px color-mix(in srgb, var(--c-accent) 45%, transparent);
+}
+
+/* Outline — accent border */
+.wf-btn-outline {
+  background: transparent;
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+.wf-btn-outline:hover {
+  background: var(--c-accent);
+  color: var(--c-bg);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c-accent) 35%, transparent);
+}
+
+/* Surface — subtle bg */
+.wf-btn-surface {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+.wf-btn-surface:hover {
+  background: color-mix(in srgb, var(--c-surface) 70%, var(--c-accent));
+  border-color: var(--c-accent);
+}
+
+/* Danger */
+.wf-btn-danger {
+  background: #dc2626;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(220,38,38,0.284);
+}
+.wf-btn-danger:hover { box-shadow: 0 0 18px rgba(220,38,38,0.406); }
+
+/* Disabled */
+.wf-btn:disabled, .wf-btn[disabled] {
+  opacity: .45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Full width */
+.wf-btn-block { width: 100%; }
+
+/* Icon-only */
+.wf-btn-icon { padding: 11px; border-radius: var(--radius); }
+.wf-btn-icon.wf-btn-sm { padding: 7px; }
+
+/* ── 7. CARDS ────────────────────────────────────────────────── */
+.wf-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease),
+              transform var(--speed) var(--ease);
+}
+
+.wf-card:hover {
+  border-color: color-mix(in srgb, var(--c-accent) 50%, transparent);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--c-accent) 10%, transparent),
+              0 2px 8px rgba(0,0,0,0.384);
+  transform: translateY(-3px);
+}
+
+.wf-card-body   { padding: 24px; }
+.wf-card-header { padding: 18px 25px; border-bottom: 1px solid var(--c-border); }
+.wf-card-footer { padding: 16px 23px; border-top: 1px solid var(--c-border); }
+
+/* Glow variant */
+.wf-card-glow {
+  box-shadow: 0 0 0 1px var(--c-border),
+              0 4px 24px rgba(0,0,0,0.511);
+}
+.wf-card-glow:hover {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-accent) 70%, transparent),
+              0 0 41px color-mix(in srgb, var(--c-accent) 12%, transparent),
+              0 8px 40px rgba(0,0,0,0.468);
+  transform: translateY(-4px);
+}
+
+/* Premium variant */
+.wf-card-premium {
+  background: linear-gradient(149deg,
+    color-mix(in srgb, var(--c-surface) 90%, var(--c-accent)),
+    var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-accent) 30%, transparent);
+}
+
+/* Flat — no hover */
+.wf-card-flat { transition: none; }
+.wf-card-flat:hover { transform: none; box-shadow: none; }
+
+/* ── 8. BADGES ───────────────────────────────────────────────── */
+.wf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.wf-badge-accent {
+  background: color-mix(in srgb, var(--c-accent) 15%, transparent);
+  color: var(--c-accent);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 35%, transparent);
+}
+.wf-badge-live {
+  background: #dc2626;
+  color: #fff;
+  animation: wf-pulse-badge 2.056s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(220,38,38,0.532);
+}
+.wf-badge-hot {
+  background: linear-gradient(132deg, #f97316, #dc2626);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(249,115,22,0.388);
+}
+.wf-badge-new {
+  background: linear-gradient(136deg, #16a34a, #15803d);
+  color: #fff;
+}
+.wf-badge-vip {
+  background: linear-gradient(135deg, #92400e, #b45309);
+  color: #fef3c7;
+  border: 1px solid #d97706;
+}
+.wf-badge-surface {
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+}
+.wf-badge-top {
+  background: linear-gradient(134deg, var(--c-btn), color-mix(in srgb, var(--c-btn) 70%, var(--c-accent)));
+  color: var(--c-btn-text);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-btn) 35%, transparent);
+}
+
+/* Age/responsibility marker — deliberately low-contrast so it reads as
+   a compliance note, not a promo badge. Every footer uses this exact
+   class, so "18+" always looks identical across site variants. */
+.wf-badge-age {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  background: transparent;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  letter-spacing: .02em;
+  text-transform: none;
+  opacity: .75;
+  white-space: nowrap;
+}
+
+/* Live dot */
+.wf-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: wf-pulse-dot 1.617s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── 9. TAGS / PILLS ─────────────────────────────────────────── */
+.wf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-full);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  transition: border-color var(--speed) var(--ease), color var(--speed) var(--ease);
+}
+.wf-tag:hover, .wf-tag.active {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+.wf-tag.active {
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+}
+
+/* ── 10. HEADER ──────────────────────────────────────────────── */
+.wf-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: var(--c-primary);
+  border-bottom: 1px solid var(--c-border);
+}
+
+/* When toggled non-sticky by builder */
+.wf-header[style*="position:relative"] {
+  position: relative !important;
+}
+
+.wf-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 69px;
+  gap: 20px;
+}
+.wf-header-inner a[class*="-btn"],
+.wf-header-inner a[class*="_btn"],
+.wf-header-inner a.wf-btn {
+  font-size: 0.815rem !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 37px;
+}
+
+/* Promo strip above header */
+.wf-header-strip {
+  background: var(--c-accent);
+  color: var(--c-bg);
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 24px;
+}
+
+.wf-header-strip a {
+  color: inherit;
+  opacity: .85;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: opacity .15s, text-decoration-color .15s;
+}
+.wf-header-strip a:hover { opacity: 1; text-decoration-color: currentColor; }
+
+/* Logo */
+.wf-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+a.wf-logo:hover { opacity: .7; }
+div.wf-logo { user-select: none; }
+
+.wf-logo-icon {
+  width: 33px;
+  height: 35px;
+  background: var(--c-accent);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0;
+  padding-bottom: 1px;
+  color: var(--c-bg);
+  flex-shrink: 0;
+}
+
+.wf-logo-text {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -.03em;
+  color: var(--c-text);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.wf-logo-png {
+  height: 40px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* Nav */
+.wf-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.wf-nav-link {
+  text-decoration: none;
+  white-space: nowrap;
+  position: relative;
+}
+.wf-nav > .wf-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-text-muted);
+  border-radius: var(--radius-sm);
+  transition: color var(--speed) var(--ease),
+              background var(--speed) var(--ease);
+}
+
+.wf-nav > .wf-nav-link:hover {
+  color: var(--c-text);
+  background: color-mix(in srgb, var(--c-text) 6%, transparent);
+}
+
+.wf-nav > .wf-nav-link.active {
+  color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+}
+
+/* ── Nav Hover Styles ── */
+
+/* 1. Animated underline — line grows from center */
+.wf-nav-hover-1 .wf-nav > .wf-nav-link::after { content:''; position:absolute; bottom:2px; left:50%; width:0; height:2px; background:var(--c-accent); border-radius:2px; transition:width .25s ease, left .25s ease; }
+.wf-nav-hover-1 .wf-nav > .wf-nav-link:hover { background:none; color:var(--c-text); }
+.wf-nav-hover-1 .wf-nav > .wf-nav-link:hover::after { width:60%; left:20%; }
+
+/* 2. Pill highlight — soft accent pill */
+.wf-nav-hover-2 .wf-nav > .wf-nav-link { border-radius:20px; }
+.wf-nav-hover-2 .wf-nav > .wf-nav-link:hover { background:color-mix(in srgb, var(--c-accent) 12%, transparent); color:var(--c-accent); }
+
+/* 3. Clean accent text — just color shift */
+.wf-nav-hover-3 .wf-nav > .wf-nav-link:hover { background:none; color:var(--c-accent); }
+
+/* 4. Soft bg — subtle background tint */
+.wf-nav-hover-4 .wf-nav > .wf-nav-link { border-radius:6px; }
+.wf-nav-hover-4 .wf-nav > .wf-nav-link:hover { background:color-mix(in srgb, var(--c-text) 8%, transparent); color:var(--c-text); }
+
+/* 5. Glow — soft text glow on hover */
+.wf-nav-hover-5 .wf-nav > .wf-nav-link:hover { background:none; color:var(--c-accent); text-shadow:0 0 10px color-mix(in srgb, var(--c-accent) 40%, transparent); }
+
+/* 6. Full underline — line slides from left */
+.wf-nav-hover-6 .wf-nav > .wf-nav-link::after { content:''; position:absolute; bottom:2px; left:0; width:0; height:2px; background:var(--c-accent); transition:width .2s ease; }
+.wf-nav-hover-6 .wf-nav > .wf-nav-link:hover { background:none; color:var(--c-text); }
+.wf-nav-hover-6 .wf-nav > .wf-nav-link:hover::after { width:100%; }
+
+/* 7. Thin underline — subtle 1px line appears */
+.wf-nav-hover-7 .wf-nav > .wf-nav-link::after { content:''; position:absolute; bottom:4px; left:16px; right:16px; height:1px; background:var(--c-accent); opacity:0; transition:opacity .2s; }
+.wf-nav-hover-7 .wf-nav > .wf-nav-link:hover { background:none; color:var(--c-accent); }
+.wf-nav-hover-7 .wf-nav > .wf-nav-link:hover::after { opacity:1; }
+
+/* 8. Accent pill bg — filled rounded */
+.wf-nav-hover-8 .wf-nav > .wf-nav-link { border-radius:6px; }
+.wf-nav-hover-8 .wf-nav > .wf-nav-link:hover { background:color-mix(in srgb, var(--c-accent) 15%, transparent); color:var(--c-accent); }
+
+/* 9. Dot — small accent dot below */
+.wf-nav-hover-9 .wf-nav > .wf-nav-link::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--c-accent); opacity:0; transition:opacity .2s; }
+.wf-nav-hover-9 .wf-nav > .wf-nav-link:hover { background:none; color:var(--c-text); }
+.wf-nav-hover-9 .wf-nav > .wf-nav-link:hover::after { opacity:1; }
+
+/* 10. Border bottom — clean 2px bottom line */
+.wf-nav-hover-10 .wf-nav > .wf-nav-link::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--c-accent); transform:scaleX(0); transition:transform .2s ease; }
+.wf-nav-hover-10 .wf-nav > .wf-nav-link:hover { background:none; color:var(--c-text); }
+.wf-nav-hover-10 .wf-nav > .wf-nav-link:hover::after { transform:scaleX(1); }
+
+/* Lang Switcher */
+.wf-lang-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.wf-lang-current {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  transition: opacity 0.146s;
+  padding: 0;
+}
+.wf-lang-current:hover { opacity: 0.75; }
+.wf-lang-current .wf-lang-flag {
+  width: 31px;
+  height: 33px;
+}
+.wf-lang-flag {
+  width: 21px;
+  height: 22px;
+  border-radius: 50%;
+  display: block;
+  object-fit: cover;
+  flex-shrink: 0;
+  aspect-ratio: 1;
+}
+.wf-lang-code { text-transform: uppercase; letter-spacing: 0.041em; }
+.wf-lang-arrow { font-size: 0.499rem; opacity: 0.5; transition: transform 0.195s; }
+.wf-lang-switch:hover .wf-lang-arrow { transform: rotate(179deg); }
+.wf-lang-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  padding-top: 4px;
+  min-width: 157px;
+  background: var(--c-primary);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 8px 23px rgba(0,0,0,0.346);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.147s;
+  z-index: 200;
+}
+.wf-lang-switch:hover .wf-lang-dropdown {
+  opacity: 1;
+  pointer-events: auto;
+}
+.wf-lang-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: var(--c-text-muted);
+  text-decoration: none;
+  font-size: 0.777rem;
+  font-weight: 500;
+  transition: background 0.147s, color 0.146s;
+}
+.wf-lang-option:hover { background: color-mix(in srgb, var(--c-text) 7%, transparent); color: var(--c-text); }
+.wf-lang-option.active { color: var(--c-accent); }
+
+/* Legacy */
+.wf-nav-underline .wf-nav-link { border-radius: 0; border-bottom: 2px solid transparent; padding-bottom: 6px; }
+.wf-nav-underline .wf-nav-link:hover { background: none; border-bottom-color: var(--c-border); }
+.wf-nav-underline .wf-nav-link.active { background: none; border-bottom-color: var(--c-accent); }
+
+/* CTA group */
+.wf-header-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Mobile menu button */
+.wf-menu-btn {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--speed) var(--ease);
+}
+.wf-menu-btn:hover { background: color-mix(in srgb, var(--c-text) 8%, transparent); }
+.wf-menu-btn span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--c-text);
+  border-radius: 2px;
+  transition: transform var(--speed) var(--ease), opacity var(--speed) var(--ease);
+}
+.wf-menu-btn.open span:nth-child(1) { transform: rotate(46deg) translate(5px, 5px); }
+.wf-menu-btn.open span:nth-child(2) { opacity: 0; }
+.wf-menu-btn.open span:nth-child(3) { transform: rotate(-46deg) translate(5px, -5px); }
+
+/* Mobile drawer */
+.wf-mobile-nav {
+  display: none;
+  flex-direction: column;
+  background: var(--c-primary);
+  border-top: 1px solid var(--c-border);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.249);
+}
+.wf-mobile-nav.open { display: flex; }
+
+/* ── Mobile header policy (framework override) ───────────────────
+   Keep Login / Register / Lang switcher visible on mobile across ALL
+   30+ header variants. Components historically hid their `*-desktop`
+   action groups behind a hamburger; the framework now wins and forces
+   them visible inline so brand-critical actions never require a tap
+   to reveal. Buttons shrink to fit narrow viewports.
+
+   Selector permissiveness:
+   - `[class*="cta-desktop"]` substring match covers BOTH hyphen- and
+     underscore-separated prefixes (`.xf86-cta-desktop` AND `.h18_cta-desktop`).
+   - No `.wf-header` ancestor scope: 3 header variants (h11/h14/h21)
+     don't use the `wf-header` class. The class names below are
+     specific enough that we don't need parent scoping. */
+@media (max-width: 768px) {
+  body [class*="cta-desktop"],
+  body [class*="actions-desktop"],
+  body [class*="btns-desktop"],
+  body [class*="cta-wrap"],
+  body [class*="login-actions"],
+  body [class*="strip-actions"] {
+    display: flex !important;
+    align-items: center;
+    gap: 6px !important;
+  }
+  body [class*="cta-desktop"] .wf-btn,
+  body [class*="actions-desktop"] .wf-btn,
+  body [class*="btns-desktop"] .wf-btn,
+  body [class*="cta-wrap"] .wf-btn,
+  body [class*="cta-desktop"] button,
+  body [class*="actions-desktop"] button,
+  body [class*="btns-desktop"] button,
+  body [class*="cta-wrap"] button,
+  body [class*="cta-desktop"] a,
+  body [class*="actions-desktop"] a,
+  body [class*="btns-desktop"] a,
+  body [class*="cta-wrap"] a {
+    padding: 7px 12px !important;
+    font-size: 11px !important;
+  }
+  /* Lang switcher stays compact on mobile too */
+  .wf-lang-switch, .wf-lang-current {
+    font-size: 12px !important;
+  }
+}
+.wf-mobile-nav .wf-container { padding-top: 8px; padding-bottom: 8px; }
+.wf-mobile-nav .wf-nav { display: flex; flex-direction: column; gap: 2px; }
+.wf-mobile-nav .wf-nav-link {
+  display: block;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.94rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--c-text) 75%, transparent);
+  text-decoration: none;
+  transition: background 0.147s, color 0.153s;
+}
+.wf-mobile-nav .wf-nav-link:hover {
+  background: color-mix(in srgb, var(--c-text) 7%, transparent);
+  color: var(--c-text);
+}
+
+/* ── 11. HERO ────────────────────────────────────────────────── */
+.wf-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(132deg, var(--c-grad-start) 0%, var(--c-grad-end) 100%);
+}
+
+.wf-hero-inner {
+  position: relative;
+  z-index: 1;
+  /* Vertical-only padding — using shorthand `padding: 47px 0` would also
+     wipe out the horizontal padding (27px / 16px) that .wf-container
+     provides on the SAME element, leaving hero text flush against the
+     viewport edge on mobile. Set top/bottom explicitly so horizontal
+     padding inherited from .wf-container stays intact. */
+  padding-top: 47px;
+  padding-bottom: 49px;
+}
+
+/* Decorative bg mesh */
+.wf-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, color-mix(in srgb, var(--c-accent) 8%, transparent), transparent),
+    radial-gradient(ellipse 40% 40% at 80% 20%, color-mix(in srgb, var(--c-btn) 6%, transparent), transparent);
+  pointer-events: none;
+}
+
+.wf-hero-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 47px;
+}
+
+.wf-hero-center { text-align: center; max-width: 782px; margin: 0 auto; }
+
+/* ── 12. DIVIDERS ────────────────────────────────────────────── */
+.wf-divider     { height: 1px; background: var(--c-border); }
+.wf-divider-v   { width: 1px; height: auto; align-self: stretch; background: var(--c-border); flex-shrink: 0; }
+
+.wf-divider-accent {
+  height: 2px;
+  background: linear-gradient(89deg, transparent, var(--c-accent), transparent);
+}
+
+.wf-section-break {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+.wf-section-break::before,
+.wf-section-break::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(89deg, transparent, var(--c-border));
+}
+.wf-section-break::after {
+  background: linear-gradient(273deg, transparent, var(--c-border));
+}
+
+/* ── 13. SCROLL STRIP (game cards, etc.) ─────────────────────── */
+.wf-scroll-strip {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0 12px;
+}
+
+.wf-scroll-strip::-webkit-scrollbar { height: 3px; }
+.wf-scroll-strip::-webkit-scrollbar-track { background: var(--c-surface); border-radius: 2px; }
+.wf-scroll-strip::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 2px; }
+
+.wf-scroll-strip > * { scroll-snap-align: start; flex-shrink: 0; }
+
+/* ── 14. GAME CARD ───────────────────────────────────────────── */
+.wf-game-card {
+  width: 160px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color var(--speed) var(--ease),
+              transform var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease);
+  cursor: pointer;
+}
+
+.wf-game-card:hover {
+  border-color: var(--c-accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--c-accent) 15%, transparent);
+}
+
+.wf-game-thumb {
+  height: 99px;
+  background: linear-gradient(136deg, var(--c-primary), var(--c-secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 39px;
+  position: relative;
+  overflow: hidden;
+}
+
+.wf-game-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.649);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--speed) var(--ease);
+  backdrop-filter: blur(2px);
+}
+
+.wf-game-card:hover .wf-game-thumb-overlay { opacity: 1; }
+
+.wf-play-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--c-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-btn-text);
+  font-size: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.427);
+  transition: transform var(--speed-fast) var(--ease-spring);
+}
+.wf-play-btn:hover { transform: scale(1.1); }
+
+.wf-game-info { padding: 10px 12px 12px; }
+
+.wf-game-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wf-game-provider {
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-top: 3px;
+}
+
+/* ── 15. PROGRESS BAR ────────────────────────────────────────── */
+.wf-progress {
+  height: 5px;
+  background: color-mix(in srgb, var(--c-border) 80%, transparent);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.wf-progress-fill {
+  height: 100%;
+  background: linear-gradient(91deg, var(--c-accent), color-mix(in srgb, var(--c-accent) 70%, var(--c-btn)));
+  border-radius: var(--radius-full);
+  transition: width .8s var(--ease);
+}
+
+.wf-progress-thin { height: 3px; }
+.wf-progress-thick { height: 8px; }
+
+/* ── 16. STATS ───────────────────────────────────────────────── */
+.wf-stat-value {
+  font-size: 39px;
+  font-weight: 900;
+  letter-spacing: -.04em;
+  color: var(--c-accent);
+  line-height: 1;
+}
+
+.wf-stat-label {
+  font-size: 12px;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-top: 6px;
+}
+
+/* ── 17. COUNTDOWN ───────────────────────────────────────────── */
+.wf-countdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wf-countdown-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: color-mix(in srgb, var(--c-bg) 80%, transparent);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  min-width: 70px;
+  backdrop-filter: blur(8px);
+}
+
+.wf-countdown-num {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -.04em;
+  color: var(--c-accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-countdown-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--c-text-muted);
+  margin-top: 5px;
+}
+
+.wf-countdown-sep {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--c-text-muted);
+  margin-top: -10px;
+  opacity: .5;
+}
+
+/* ── 18. RATING ──────────────────────────────────────────────── */
+.wf-stars { color: #f59e0b; font-size: 15px; letter-spacing: 1px; }
+.wf-score {
+  font-size: 39px;
+  font-weight: 900;
+  letter-spacing: -.04em;
+  color: var(--c-accent);
+  line-height: 1;
+}
+.wf-score-sm { font-size: 24px; }
+
+/* ── 19. PAYMENT PILLS ───────────────────────────────────────── */
+.wf-payment-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wf-payment-pill {
+  padding: 5px 14px;
+  background: color-mix(in srgb, var(--c-surface) 80%, transparent);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  transition: border-color var(--speed) var(--ease), color var(--speed) var(--ease);
+}
+.wf-payment-pill:hover { border-color: var(--c-accent); color: var(--c-text); }
+
+/* Payment icon (SVG / PNG) rendered in the footer. Without an explicit
+   size, SVGs shipped without intrinsic width/height attributes expand
+   to fill the parent — turning a single BTC logo into a full-screen
+   takeover. Fixed height + auto width keeps every icon visually
+   consistent regardless of their natural dimensions, and the
+   surrounding `.wf-payment-pills` flex container handles wrapping.
+
+   White pill background because our colored brand SVGs (Visa blue, MC
+   red/yellow, Bitcoin orange, PayPal navy+cyan, etc.) are designed for
+   light surfaces — dropping them on a dark casino footer kills the
+   contrast. A near-white pill with subtle 92 % opacity lets the dark
+   footer tone show through just enough to sit comfortably, without
+   washing out the icon's own colours. */
+.wf-pay-logo {
+  height: 22px;
+  width: auto;
+  max-width: 58px;
+  display: inline-block;
+  object-fit: contain;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.896);
+  border: 1px solid rgba(0, 0, 0, 0.087);
+  border-radius: 6px;
+  box-sizing: content-box;
+  transition: transform var(--speed) var(--ease), box-shadow var(--speed) var(--ease);
+}
+.wf-pay-logo:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
+}
+
+/* ── 20. INPUT ───────────────────────────────────────────────── */
+.wf-input {
+  width: 100%;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: 13px 18px;
+  font-size: 14px;
+  color: var(--c-text);
+  outline: none;
+  transition: border-color var(--speed) var(--ease),
+              box-shadow var(--speed) var(--ease);
+}
+
+.wf-input:focus {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-accent) 18%, transparent);
+}
+
+.wf-input::placeholder { color: var(--c-text-muted); }
+
+/* Input + button inline */
+.wf-input-group {
+  display: flex;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color var(--speed) var(--ease);
+}
+.wf-input-group:focus-within { border-color: var(--c-accent); }
+.wf-input-group .wf-input {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  flex: 1;
+}
+.wf-input-group .wf-btn { border-radius: 0; border: none; }
+
+/* ── 21. TABLE ───────────────────────────────────────────────── */
+.wf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.wf-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--c-text-muted);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.wf-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-border) 50%, transparent);
+  color: var(--c-text);
+}
+
+.wf-table tr:hover td { background: color-mix(in srgb, var(--c-surface) 50%, transparent); }
+.wf-table tr:last-child td { border-bottom: none; }
+
+/* ── 22. TABS ────────────────────────────────────────────────── */
+.wf-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+}
+
+.wf-tab {
+  flex: 1;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--speed) var(--ease);
+  text-align: center;
+  border: 1px solid transparent;
+}
+
+.wf-tab:hover { color: var(--c-text); background: color-mix(in srgb, var(--c-text) 6%, transparent); }
+
+.wf-tab.active {
+  background: var(--c-accent);
+  color: var(--c-bg);
+  font-weight: 700;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+
+/* Simple underline tabs */
+.wf-tabs-underline {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--c-border);
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.wf-tabs-underline .wf-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px 20px;
+  margin-bottom: -1px;
+}
+
+.wf-tabs-underline .wf-tab.active {
+  background: none;
+  color: var(--c-accent);
+  border-bottom-color: var(--c-accent);
+  box-shadow: none;
+}
+
+/* ── 23. SLIDER ──────────────────────────────────────────────── */
+.wf-slider {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+
+.wf-slider-track {
+  display: flex;
+  transition: transform .5s var(--ease);
+  will-change: transform;
+}
+
+.wf-slide {
+  min-width: 100%;
+}
+
+.wf-slider-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 0 12px;
+}
+
+.wf-slider-btn {
+  width: 43px;
+  height: 42px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--c-bg) 80%, transparent);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: all;
+  transition: background var(--speed) var(--ease), transform var(--speed-fast) var(--ease);
+  backdrop-filter: blur(8px);
+  font-size: 18px;
+}
+.wf-slider-btn:hover { background: var(--c-accent); color: var(--c-bg); transform: scale(1.05); }
+.wf-slider-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+.wf-slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.wf-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-border);
+  cursor: pointer;
+  transition: background var(--speed) var(--ease),
+              width var(--speed) var(--ease);
+  border: none;
+}
+.wf-dot.active { width: 24px; border-radius: 4px; background: var(--c-accent); }
+
+/* ── 24. FOOTER ──────────────────────────────────────────────── */
+.wf-footer {
+  background: var(--c-primary);
+  border-top: 1px solid var(--c-border);
+  padding: 49px 0 27px;
+}
+
+.wf-footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 41px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.wf-footer-brand p {
+  font-size: 14px;
+  color: var(--c-text-muted);
+  line-height: 1.7;
+  margin-top: 14px;
+  max-width: 272px;
+}
+
+.wf-footer-col h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--c-text-muted);
+  margin-bottom: 16px;
+}
+
+.wf-footer-links { display: flex; flex-direction: column; gap: 10px; }
+.wf-footer-link {
+  font-size: 14px;
+  color: var(--c-text-muted);
+  transition: color var(--speed) var(--ease);
+}
+.wf-footer-link:hover { color: var(--c-accent); }
+
+.wf-footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 24px;
+}
+
+.wf-footer-legal {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--c-text-muted) 60%, transparent);
+  line-height: 1.7;
+  max-width: 843px;
+}
+
+/* ── 25. UTILITY HELPERS ─────────────────────────────────────── */
+.wf-hidden       { display: none !important; }
+.wf-sr-only      { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+.wf-mt-1 { margin-top: 8px; }
+.wf-mt-2 { margin-top: 16px; }
+.wf-mt-3 { margin-top: 28px; }
+.wf-mt-4 { margin-top: 48px; }
+.wf-mb-1 { margin-bottom: 8px; }
+.wf-mb-2 { margin-bottom: 16px; }
+.wf-mb-3 { margin-bottom: 28px; }
+
+/* ── 26. SCROLL-TRIGGERED ANIMATIONS ────────────────────────── */
+[data-animate] {
+  opacity: 0;
+  transform: translateY(19px);
+  transition: opacity .55s var(--ease), transform .55s var(--ease);
+}
+
+[data-animate].wf-visible {
+  opacity: 1;
+  transform: none;
+}
+
+[data-animate="fade"] { transform: none; }
+[data-animate="left"]  { transform: translateX(-24px); }
+[data-animate="right"] { transform: translateX(24px); }
+[data-animate="scale"] { transform: scale(.92); }
+
+/* Delay helpers */
+[data-delay="1"] { transition-delay: .1s; }
+[data-delay="2"] { transition-delay: .2s; }
+[data-delay="3"] { transition-delay: .3s; }
+[data-delay="4"] { transition-delay: .4s; }
+
+/* ── 27. KEYFRAME ANIMATIONS ─────────────────────────────────── */
+@keyframes wf-pulse-badge {
+  0%, 100% { box-shadow: 0 0 8px rgba(220,38,38,0.513); }
+  50%       { box-shadow: 0 0 20px rgba(220,38,38,0.826); }
+}
+
+@keyframes wf-pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.5); opacity: .6; }
+}
+
+@keyframes wf-glow {
+  0%, 100% { box-shadow: 0 0 12px color-mix(in srgb, var(--c-accent) 25%, transparent); }
+  50%       { box-shadow: 0 0 32px color-mix(in srgb, var(--c-accent) 55%, transparent); }
+}
+
+@keyframes wf-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes wf-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes wf-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes wf-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes wf-count {
+  from { opacity: 0; transform: scale(.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.wf-animate-glow   { animation: wf-glow   1.984s ease-in-out infinite; }
+.wf-animate-float  { animation: wf-float  2.961s ease-in-out infinite; }
+.wf-animate-spin   { animation: wf-spin   7.881s linear infinite; }
+.wf-animate-marquee { animation: wf-marquee 19.998s linear infinite; }
+
+/* Skeleton loader */
+.wf-skeleton {
+  background: linear-gradient(90deg,
+    var(--c-surface) 25%,
+    color-mix(in srgb, var(--c-surface) 60%, var(--c-border)) 50%,
+    var(--c-surface) 75%);
+  background-size: 200% 100%;
+  animation: wf-shimmer 1.466s infinite;
+  border-radius: var(--radius);
+}
+
+/* ── 28. SPECIAL EFFECTS ─────────────────────────────────────── */
+
+/* Glass card */
+.wf-glass {
+  background: color-mix(in srgb, var(--c-surface) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-text) 12%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Neon glow border */
+.wf-neon {
+  border-color: var(--c-accent) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c-accent) 40%, transparent),
+              0 0 39px color-mix(in srgb, var(--c-accent) 15%, transparent),
+              inset 0 0 20px color-mix(in srgb, var(--c-accent) 5%, transparent);
+}
+
+:where(h2, .wf-h2) {
+  position: relative;
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
+}
+
+h2 {
+  margin-bottom: 12px !important;
+}
+
+:where(h2, .wf-h2)::after {
+  content: '';
+  display: block;
+  width: 76px;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--c-accent), #22c55e 72%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--c-accent) 36%, transparent);
+}
+
+:where(.lk22-content, .ad21-grid, .xg88-head, .zq43-header, .sf50-header, .xf86-content) :where(h2, .wf-h2)::after,
+:where(h2, .wf-h2)[style*="text-align:center"]::after {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+:where(table) thead th {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--c-accent) 30%, var(--c-surface)) 0%,
+    color-mix(in srgb, var(--c-surface) 96%, var(--c-bg)) 100%) !important;
+  color: #fff !important;
+  border-bottom: 2px solid var(--c-accent) !important;
+  padding: 17px 16px !important;
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  text-align: center !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  vertical-align: middle !important;
+}
+
+:where(table) thead th:first-child {
+  text-align: left !important;
+}
+
+.xl25-title {
+  color: var(--c-accent, #f59e0b) !important;
+  font-size: clamp(22px, 2.5vw, 32px) !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+  margin: 0 0 18px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.005em !important;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.5) !important;
+}
+
+.xl25-title::after {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.xl25-amount {
+  color: #fff !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.45 !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.45) !important;
+}
+
+.xl25-amount-row {
+  gap: 16px !important;
+  margin: 0 0 25px !important;
+}
+
+.xl25-diamond {
+  border-color: var(--c-accent, #f59e0b) !important;
+}
+
+.xl25-cta {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 148px !important;
+  padding: 13px 37px !important;
+  border-radius: 12px !important;
+  background: #22c55e !important;
+  color: #0a1f12 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+
+[data-component="testimonials"] .zq43-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+[data-component="testimonials"] .zq43-layout {
+  display: grid;
+  grid-template-columns: 285px 1fr;
+  gap: 3rem;
+  align-items: start;
+  max-width: 1200px;
+  margin: 0 auto 2.45rem;
+}
+
+[data-component="testimonials"] .zq43-score-block {
+  text-align: center;
+  padding: 22px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--c-accent) 10%, transparent), transparent),
+    var(--c-surface);
+  border: 1px solid color-mix(in srgb, var(--c-accent) 18%, var(--c-border));
+}
+
+[data-component="testimonials"] .zq43-big-score {
+  font-size: 4.55rem;
+  font-weight: 900;
+  color: var(--c-accent);
+  line-height: 1;
+}
+
+[data-component="testimonials"] .zq43-tp-stars,
+[data-component="testimonials"] .zq43-rc-stars {
+  color: #f0b84d;
+  letter-spacing: 1px;
+}
+
+[data-component="testimonials"] .zq43-tp-stars {
+  font-size: 1.75rem;
+  margin: .52rem 0;
+}
+
+[data-component="testimonials"] .zq43-tp-label {
+  font-size: .88rem;
+  color: var(--c-text-muted);
+}
+
+[data-component="testimonials"] .zq43-tp-logo {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: #f0b84d;
+  margin-top: .72rem;
+}
+
+[data-component="testimonials"] .zq43-bars {
+  display: flex;
+  flex-direction: column;
+  gap: .63rem;
+}
+
+[data-component="testimonials"] .zq43-bar-row {
+  display: flex;
+  align-items: center;
+  gap: .76rem;
+}
+
+[data-component="testimonials"] .zq43-bar-label {
+  min-width: 32px;
+  color: var(--c-text);
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+[data-component="testimonials"] .zq43-bar-track {
+  flex: 1;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--c-border);
+}
+
+[data-component="testimonials"] .zq43-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #f0b84d;
+}
+
+[data-component="testimonials"] .zq43-bar-count {
+  min-width: 51px;
+  text-align: right;
+  color: var(--c-text-muted);
+  font-size: .76rem;
+}
+
+[data-component="testimonials"] .zq43-s1 {
+  margin-bottom: 1rem;
+}
+
+[data-component="testimonials"] .zq43-s2 { width: 18%; opacity: .75; }
+[data-component="testimonials"] .zq43-s3 { width: 5%; opacity: .55; }
+[data-component="testimonials"] .zq43-s4 { width: 2%; opacity: .4; }
+[data-component="testimonials"] .zq43-s5 { width: 1%; opacity: .3; }
+
+[data-component="testimonials"] .zq43-reviews-grid {
+  display: flex !important;
+  flex-wrap: nowrap;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow: hidden;
+  grid-template-columns: none !important;
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+[data-component="testimonials"] .zq43-review-card {
+  flex: 0 0 min(330px, 82vw);
+  padding: 1.1rem;
+  border-radius: 8px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  animation: zq43-marquee 52s linear infinite;
+}
+
+[data-component="testimonials"] .zq43-reviews-grid:hover .zq43-review-card {
+  animation-play-state: paused;
+}
+
+[data-component="testimonials"] .zq43-rc-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: .62rem;
+}
+
+[data-component="testimonials"] .zq43-rc-avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--c-accent) 20%, var(--c-surface));
+  color: var(--c-accent);
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+[data-component="testimonials"] .zq43-s6 { background: color-mix(in srgb,#60a5fa 15%,var(--c-surface)); color: #60a5fa; }
+[data-component="testimonials"] .zq43-s7 { background: color-mix(in srgb,#10b981 15%,var(--c-surface)); color: #10b981; }
+[data-component="testimonials"] .zq43-s8 { background: color-mix(in srgb,#8b5cf6 15%,var(--c-surface)); color: #8b5cf6; }
+
+[data-component="testimonials"] .zq43-rc-name {
+  color: #fff !important;
+  font-size: .84rem;
+  font-weight: 800;
+}
+
+[data-component="testimonials"] .zq43-rc-text {
+  margin: 0 0 .5rem;
+  color: var(--c-text-muted);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+
+[data-component="testimonials"] .zq43-rc-date {
+  color: var(--c-text-muted);
+  font-size: .7rem;
+}
+
+@keyframes zq43-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-1416px); }
+}
+
+@media (max-width: 900px) {
+  [data-component="testimonials"] .zq43-layout {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  [data-component="testimonials"] .zq43-reviews-grid {
+    mask-image: none;
+  }
+}
+
+/* Gradient border trick */
+.wf-grad-border {
+  position: relative;
+  border: none !important;
+}
+.wf-grad-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(137deg, var(--c-accent), var(--c-btn));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: destination-out;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── 29. RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .wf-container { padding: 0 21px; }
+  .wf-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .wf-footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .wf-hero-split { grid-template-columns: 1fr; gap: 36px; }
+}
+
+@media (max-width: 768px) {
+  .wf-container { padding: 0 16px; }
+  .wf-section { padding-top: 53px; padding-bottom: 52px; }
+  .wf-section-sm { padding-top: 36px; padding-bottom: 36px; }
+
+  .wf-grid-2, .wf-grid-3, .wf-grid-4 { grid-template-columns: 1fr; }
+
+  .wf-nav { display: none; }
+  .wf-menu-btn { display: flex; }
+
+  .wf-header-inner { height: 60px; }
+  .wf-logo-text { font-size: 16px; }
+
+  .wf-footer-grid { grid-template-columns: 1fr; gap: 25px; }
+  .wf-footer-bottom { flex-direction: column; align-items: flex-start; }
+
+  .wf-hero-inner { padding-top: 55px; padding-bottom: 55px; }
+  .wf-h1 { font-size: 32px; }
+  .wf-h2 { font-size: 26px; }
+
+  .wf-countdown-box { padding: 10px 12px; min-width: 55px; }
+  .wf-countdown-num { font-size: 24px; }
+
+  .wf-tabs { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  .wf-btn { padding: 11px 22px; }
+  .wf-btn-lg { padding: 14px 33px; font-size: 15px; }
+  .wf-btn-xl { padding: 16px 37px; font-size: 16px; }
+  .wf-stat-value { font-size: 30px; }
+  .wf-score { font-size: 32px; }
+}
+
+.wf-section,
+.wf-section-sm,
+.wf-section-xs,
+.wf-hero-inner {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+main > section:not(:first-of-type) :where(
+  p,
+  [class$="-lead"],
+  [class*="-lead "],
+  [class$="-intro"],
+  [class*="-intro "],
+  [class$="-copy"],
+  [class*="-copy "],
+  [class$="-desc"],
+  [class*="-desc "],
+  [class$="-sub"],
+  [class*="-sub "]
+) {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+a.es-hero-register {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 14px 36px !important;
+  border: none !important;
+  border-radius: var(--radius-full) !important;
+  background: var(--c-accent) !important;
+  color: var(--c-bg) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  transition: filter .2s, box-shadow .2s !important;
+}
+
+a.es-hero-register:hover {
+  filter: brightness(1.06) !important;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--c-accent) 42%, transparent) !important;
+}
